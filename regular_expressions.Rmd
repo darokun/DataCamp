@@ -1,0 +1,93 @@
+---
+title: "Regular Expressions in R"
+author: "Daloha Rodr&iacute;guez-Molina"
+date: "1/19/2018"
+output: html_document
+---
+
+# Regular Expressions in R
+## Course: Intermediate R
+
+### Functions to use
+?grep     
+?grepl     
+?sub     
+?gsub     
+
+### 1. grep
+Identifies a regular expression and returns a numeric vector indicating the position of the element that matches the regex.
+
+**Usage**: `grep(pattern = <regex>, x = <string>)`
+```{r}
+animals <- c("cat", "moose", "impala", "ant", "kiwi")
+grep(pattern = "a", x = animals)
+[1] 1 3 4
+```
+
+### 2. grepl
+Same as `grep` but returns a logical vector.
+
+**Usage**: `grepl(pattern = <regex>, x = <string>)`
+```{r}
+animals <- c("cat", "moose", "impala", "ant", "kiwi")
+grepl(pattern = "a", x = animals)
+[1]  TRUE FALSE  TRUE  TRUE FALSE
+```
+
+Doing `grep(pattern = "a", x = animals)` is the same as doing `which(grepl(pattern = "a", x = animals))`:
+```{r}
+grep(pattern = "a", x = animals)
+[1] 1 3 4
+
+which(grepl(pattern = "a", x = animals))
+[1] 1 3 4
+```
+#### Options for `grep`, `grepl` and regex in general:
+* match regex to the beginning of an element: Use `^regex`
+```{r}
+grepl(pattern = "^a", x = animals)
+[1] FALSE FALSE FALSE  TRUE FALSE
+```
+* match regex to the end of an element: Use `regex$`
+```{r}
+grepl(pattern = "a$", x = animals)
+[1] FALSE FALSE  TRUE FALSE FALSE
+```
+
+### 3. sub
+Replaces matches with other strings.     
+**Usage**: `sub(pattern = <regex>, replacement = <str>, x = <str>)`
+```{r}
+sub(pattern = "a", replacement = "o", x = animals)
+[1] "cot"    "moose"  "impola" "ont"    "kiwi" 
+```
+**Warning**: `sub()` only looks for the first match in the string! Therefore, "impala" was changed to "impola". The last "a" is conserved.     
+**Solution**: `gsub()`
+
+### 4. gsub
+Does the same as `sub()` but replaces all instances in a string.
+```{r}
+gsub(pattern = "a", replacement = "o", x = animals)
+[1] "cot"    "moose"  "impolo" "ont"    "kiwi"  
+```
+#### Options for `sub`, `gsub` and regex in general:
+* The OR operator: Takes into account two regex to replace:
+```{r}
+gsub(pattern = "a|i", replacement = "_", x = animals)
+[1] "c_t"    "moose"  "_mp_l_" "_nt"    "k_w_" 
+
+gsub(pattern = "a|i|o", replacement = "_", x = animals)
+[1] "c_t"    "m__se"  "_mp_l_" "_nt"    "k_w_" 
+```
+
+
+
+
+
+
+
+
+
+
+
+
