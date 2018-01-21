@@ -144,3 +144,37 @@ compute_fail_pct <- function(x) {
 # Call compute_fail_pct on logs
 compute_fail_pct(logs)
 ```
+
+### lapply on logs (3)
+Actually, even using an anonymous function inside `lapply` is too much. The double square brackets to select an element from a list is also a function itself, as this example reveals:
+
+```
+x <- list(a = 1, b = 2, c = 3)
+x[["a"]]
+`[[`(x, "a")
+```
+
+Copy and paste the code snippet above to the console so you gain a better understanding of what's going on. This means that you can assign ``[[`` to the `FUN` argument to `lapply()`, and add a third argument to `lapply()`, which will be passed as an argument to the ``[[`` function.
+
+#### Exercise
+Instead of using an anonymous function, use ``[[`` to select the timestamp element from each log entry. The third argument of `lapply()` should specify which element you want to select from each sublist.
+```{r}
+# logs is available in your workspace
+
+# Replace the anonymous function with `[[` 
+lapply(logs, `[[`, "timestamp")
+```
+
+### Loop it the way you want it
+`for`, `while`, `lapply()`, `sapply()`, `vapply()`... that's quite a list. All of these can be used to loop through your very own data. Which one works best depends on the situation and your personal preference, but like most things, the functions of the `apply()` family are faster and easier to use with more practice.
+
+To finish this chapter in style, you'll solve this exercise with minimum guidance. You'll be working with the `logs` dataset one last time. Enjoy!
+
+#### Exercise
+Create a vector that contains the `message` part of each log entry in `logs` in uppercase letters. In your solution, you might want to use the function `toupper()`. Simply print this vector to the console.
+```{r}
+# logs is available in your workspace
+
+# Return vector with uppercase version of message elements in log entries
+toupper(vapply(logs, `[[`, c("details","message"), FUN.VALUE = character(1)))
+```
