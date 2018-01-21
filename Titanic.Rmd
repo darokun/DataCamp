@@ -1,0 +1,180 @@
+# Titanic
+## Course: Intermediate R Exercises
+
+
+### Titanic
+Let's step away from your data science job at the chemical plant and start analyzing a major event in modern history: the sinking of the Titanic.
+
+This terrible accident claimed the life of over 1500 people, making it one of the deadliest maritime disasters in times of peace.
+
+To gain some more context about this event, we've prepared data on the Titanic (Source: [Kaggle](https://www.kaggle.com/c/titanic/data)). The code that imports the data in `titanic.csv` into an R object `titanic` has already been included. Let's start by exploring this `titanic` dataset.
+
+* Call `dim()` on `titanic` to figure out how many observations and variables there are.
+* Call `hist()` on the `Age` column of the `titanic`# Import titanic from csv
+
+```{r}
+titanic <- read.csv("titanic.csv")
+
+# Call dim on titanic
+dim(titanic)
+
+# Generate histogram of Age column
+hist(titanic$Age) dataset to create a histogram displaying the age distribution of the passengers.
+```
+
+### Infer gender from name
+In the console, have a look at the `Name` column of `titanic`, that contains the names of the passengers. The name of the first passenger in the dataset is `Braund, Mr. Owen Harris`. All these names have a common format. First, we have the family name, next there's the title, followed by the first and middle names.
+
+Because this layout is consistent throughout the `Name` column, we're able to infer the gender of the passenger: men have the title `Mr.`, women have the title `Mrs` or `Miss`.
+
+Let's start by finding out which names contain the pattern `"", Mr\\.".` Notice that we need `\\.` because we want to use it as an actual period, not as the wildcard character used in regular expressions.
+
+* Use `grepl()` with the pattern `", Mr\\."` on the predefined `pass_names` vector. Store the resulting logical vector as `is_man`.
+* Sum up the logical values in `is_man` to figure out the number of men.
+* The last line that counts the number of men based on the `Sex` column in titanic is already included, so we can compare the results.
+```{r}
+# Extract the name column from titanic
+pass_names <- titanic$Name
+
+# Create the logical vectror is_man
+is_man <- grepl(pattern = ", Mr\\.", pass_names)
+
+# Count the number of men
+sum(is_man)
+
+# Count number of men based on gender
+sum(titanic$Sex == "male")
+```
+
+In the previous exercise, it appeared that the title `Mr.` may not cover all men on board. Instead of manually going through all titles that appear in the `Name` column of `titanic`, we can write a clever `gsub()` command that extracts the title part.
+
+The pattern we'll need is the following:
+```
+"^.*, (.*?)\\..*$"
+```
+
+With `^` and `$` we signify the start and end of the string. Next, we have two `.*` parts in there: wildcards for the last name and first names. With `, (.*?)\\.` we use a similar pattern as before, but the parentheses allow us to re-use whatever is matched inside the parentheses in our replacement.
+
+* Fill in the pattern into the `gsub()` call to create the titles vector. The `"\\1"` part tells R to replace the entire string with whatever is matched inside the parentheses.
+* Call `unique()` on titles to get an overview of all different titles that are found in the name vector. Simply print out the result.
+
+```{r}
+# Extract the name column from titanic
+pass_names <- titanic$Name
+
+# Create titles
+titles <- gsub("^.*, (.*?)\\..*$", "\\1", pass_names)
+
+# Call unique() on titles
+unique(titles)
+```
+
+After a close look at the different titles that appeared in the previous exercise, we made a selection of titles that can be linked to male passengers. Patterns for these titles are in the `titles` vector on the right.
+
+To figure out which passenger has which title, we can create a matrix. In this matrix, each passenger is a row, and each column represents a title. If a certain matrix element is `TRUE`, this means that the passenger has the title. This also means that every row can only contain one `TRUE`, the rest being `FALSE`, because titles are mutually exclusive. That is, nobody is titled both `Mr.` and `Major`, for instance. To end up with this matrix, we could use the following for loop:
+```
+res <- matrix(nrow = length(pass_names),
+              ncol = length(titles))
+
+for (i in seq_along(titles)) {
+  res[, i] <- grepl(titles[i], pass_names)
+}
+```
+
+There's a way more concise way to do this, however. Remember the `vapply()` function from the third chapter? You can use it to call `grepl()` over all titles in the `titles` vector, with `pass_names` as an additional argument. If you do this properly, you'll end up with the exact same matrix described above. Simply taking the sum of this matrix should give us the total number of hits for each title, and thus the total count of males inferred from their respective titles.
+
+* Carefully reread the last paragraph in the assignment text above. Finish the `vapply()` call accordingly to calculate the `hits` matrix.
+* Call `sum()` on `hits` to print out the total number of elements in `hits` that are `TRUE` (Remember? `TRUE` coerces to 1).
+* The code that counts the number of males based on `Sex` is already included, so you can compare.
+
+```{r}
+pass_names <- titanic$Name
+titles <- paste(",", c("Mr\\.", "Master", "Don", "Rev", "Dr\\.", "Major", "Sir", "Col", "Capt", "Jonkheer"))
+
+# Finish the vapply() command
+hits <- vapply(titles,
+               FUN = grepl,
+               FUN.VALUE = logical(length(pass_names)),
+               pass_names)
+
+# Calculate the sum() of hits
+sum(hits)
+
+# Count number of men based on gender
+sum(titanic$Sex == "male")
+```
+
+### Reformat passenger names
+Now that you had some practice on regular expressions, let's try to clean up the names.
+
+The `pass_names` vector that you worked with before is already preloaded. For men, the overall format is like before. For women, however, there is only a female title, but then the name of her spouse. The first two elements in name show this:
+
+```
+> pass_names[1:2]
+[1] "Braund, Mr. Owen Harris"
+[2] "Cumings, Mrs. John Bradley (Florence Briggs Thayer)"
+```
+
+Suppose we want to change men's names to a modern format, without a title, and change the women's names to only include their own name, like this:
+
+```
+> clean_pass_names[1:2]
+[1] "Owen Harris"
+[2] "Florence Briggs Thayer"
+```
+
+To make this conversion, we've started a function `convert_name()` that converts the name depending on the case (male or female). The first `gsub()` function uses `\\1` as the replacement argument. This is a reference to the matched characters that are captured inside the parentheses of the pattern. To see how it works, try the following example in the console:
+
+```
+gsub("(a|b|c)", "_\\1_", "all cool brother")
+```
+
+Once you finish this function, you can use it inside `vapply()` to apply it to all elements in the `pass_names` vector.
+
+* Finish the second `gsub()` function inside `convert_name()`; replace the `___` parts with `\\1` or `\\2` to referencing the matched characters contained in the first and second set of parentheses in the pattern.
+* Complete the `vapply()` call so that it applies the `convert_name` function to each element in `pass_names`.
+* Finally, print out `clean_pass_names` to check if the result makes sense.
+
+```{r}
+# pass_names is available in your workspace
+
+convert_name <- function(name) {
+  # women: take name from inside parentheses
+  if (grepl("\\(.*?\\)", name)) {
+    gsub("^.*?\\((.*?)\\)$", "\\1", name)
+  # men: take name before comma and after title
+  } else {
+    # Finish the gsub() function
+    gsub("^(.*?),\\s[a-zA-Z\\.]*?\\s(.*?)$", "\\2 \\1", name)
+  }
+}
+
+# Call convert_name on name
+clean_pass_names <- vapply(pass_names, FUN = convert_name,
+                           FUN.VALUE = character(1), USE.NAMES = FALSE)
+
+# Print out clean_pass_names
+clean_pass_names
+```
+
+### Check if there are >= 3 digits in a row with grepl()
+
+* `grepl("\\d", x)`: checks if x contains at least one digit.
+* `grepl("\\d+", x)`:  checks if x contains one or more digits.
+* `grepl("\\d{3}", x)`: checks if x contains exactly three digits.
+* `grepl("\\d{3,}", x)`: checks if x contains three or more digits in a row.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
