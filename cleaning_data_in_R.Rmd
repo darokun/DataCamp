@@ -1,0 +1,85 @@
+# Functions in the tidyr package
+## Course: Cleaning Data in R
+
+### The tidyr package
+The tidyr package contains functions to make data tidy. Some of these functions are:
+* The `gather()` function: Gather columns into key-value pairs.
+* The `spread()` function: Spread key-value pais into columns.
+* The `separate()` function: Separate one column into multiple.
+* The `unite()` function: Unite multiple columns into one.
+
+### The gather function
+The most important function in tidyr is `gather()`. It should be used when you have columns that are not variables and you want to collapse them into key-value pairs.
+
+The easiest way to visualize the effect of `gather()` is that it makes wide datasets long. As you saw in the video, running the following command on `wide_df` will make it long:
+
+```{r}
+gather(wide_df, my_key, my_val, -col)
+```
+
+### The spread function
+The opposite of `gather()` is `spread()`, which takes key-values pairs and spreads them across multiple columns. This is useful when values in a column should actually be column names (i.e. variables). It can also make data more compact and easier to read.
+
+The easiest way to visualize the effect of `spread()` is that it makes long datasets wide. As you saw in the video, running the following command will make `long_df` wide:
+
+```{r}
+spread(long_df, my_key, my_val)
+```
+
+Notice that the `spread()` function took in three arguments. The first argument takes the name of your messy dataset, the second argument takes the name of the column to spread into new columns, and the third argument takes the column that contains the value with which to fill in the newly spread out columns.
+
+### Separating columns
+The `separate()` function allows you to separate one column into multiple columns. Unless you tell it otherwise, it will attempt to separate on any character that is not a letter or number. You can also specify a specific separator using the `sep` argument.
+
+We've loaded the small dataset from the video called `treatments` into your workspace. This dataset obeys the principles of tidy data, but we'd like to split the treatment dates into two separate columns: `year` and `month`. This can be accomplished with the following:
+
+```{r}
+separate(treatments, year_mo, c("year", "month"))
+```
+
+### Uniting columns
+The opposite of `separate()` is `unite()`, which takes multiple columns and pastes them together. By default, the contents of the columns will be separated by underscores in the new column, but this behavior can be altered via the `sep` argument.
+
+We've loaded the `treatments` data into your workspace again, but this time the `year_mo` column has been separated into `year` and `month`. The original column can be recreated by putting `year` and `month` back together:
+
+```{r}
+unite(treatments, year_mo, year, month)
+```
+
+### Common violations of the tidy principles
+* Column headers are values, not column names (e.g., as if they were dummy variables). **Solution**: Use the `gather()` function.Example: variables include `blue`, `brown` and `other` for eye color, and the information is stored as either 1 or 0, depending on whether the attribute is present or absent. However, these colors should be values of a single variable called `eye_color`. 
+
+* Variables are stored in both columns and rows. **Solution**: use the `spread()` function. Example:
+```{r}
+namesdf_untidy <- data.frame(name = c("Jake", "Jake", "Jake", "Alice", "Alice", "Alice"), 
+                            measurement = c("n_dogs", "n_cats", "n_birds", "n_dogs", "n_cats", "n_birds"), 
+                            value = c(1, 0, 1, 1, 2, 0))
+namesdf_untidy
+
+names_df_tidy <- data.frame(name = c("Jake", "Alice"),
+                            n_dogs = c(1, 1),
+                            n_cats = c(0, 2),
+                            n_birds = c(1, 0))
+names_df_tidy
+```
+
+* Multiple variables are stored into a single column. Example: sex and age information are in just one column. **Solution**: use the `separate()` function.
+
+* A single observational unit is stored in multiple tables. People in different datasets.
+
+* Multiple types of observational units are stored in the same dataset. Example: people and pets in the same dataset. What happens is that there is one row per pet, but multiple rows per person, which leads to having the same info about each person twice, three times, etc. **Solution**: Break up the information into multiple tables, using a primary key to identify the relation between them (see relational databases).
+
+### The stringr package
+The `stringr` package contains functions to work with strings. Some of these functions are:
+* The `str_trim()` function: Trim leading and trailing white space.
+* The `str_pad()` function: Pad with additional characters.
+* The `str_detect()` function: Detect a pattern.
+* The `str_replace()` function: Find and replace a pattern.
+
+The stringr package provides two functions that are very useful for finding and/or replacing strings: `str_detect()` and `str_replace()`.
+
+Like all functions in stringr, the first argument of each is the string of interest. The second argument of each is the pattern of interest. In the case of `str_detect()`, this is the pattern we are searching for. In the case of `str_replace()`, this is the pattern we want to replace. Finally, `str_replace()` has a third argument, which is the string to replace with.
+
+### Other useful functions from base R
+* The `tolower()` function: Make all lowercase.
+* The `toupper()` function: Make all uppercase.
