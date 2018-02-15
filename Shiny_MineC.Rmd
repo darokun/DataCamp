@@ -281,3 +281,11 @@ server <- function(input, output) {
 # Create a Shiny app object
 shinyApp(ui = ui, server = server)
 ```
+
+## More reactivity
+
+### Reactlog
+It's a graphical representation of the dependency structure of reactive expressions in Shiny. It also gives very detailed information about what is happening under the hood as Shiny evaluates an app. To view:
+* In a fresh R session, run `options(shiny.reactlog = TRUE)`
+* Then, launch your application as you normally would
+* In the app, press CMD + F3
