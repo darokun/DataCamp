@@ -289,3 +289,25 @@ It's a graphical representation of the dependency structure of reactive expressi
 * In a fresh R session, run `options(shiny.reactlog = TRUE)`
 * Then, launch your application as you normally would
 * In the app, press CMD + F3
+
+## Stop, trigger, delay
+* `observe()`: observers are useful for their side effects, but they don't calculate anything.
+* `reactive()`: reactive expressions return values, and have no side effects.
+** A side effect is e.g. download a file.**
+* `observeEvent()`: To **perform an action** in response to an event. E.g. Download a data frame when user presses action button:
+```{r}
+# ui
+actionButton(inputId = "write_csv", label = "Write CSV")
+
+# server
+observeEvent(input$write_csv, {
+              filename <- paste0("movies_",
+                          str_replace_all(Sys.time(), ":|\", "_"),
+                          ".csv")
+              write_csv(movies_sample(), path = filename)
+              }                
+```
+* `eventReactive()`: used to **create a calculated value** that only updates in response to an event. E.g. update calculations for a plot based on sample size inputted by the user only when the user clicks on action button "Calculate!".
+
+`observe()` and `reactive()` automatically trigger whatever they access.
+`observeEvent()` and `eventReactive()` need to be explicitely told what triggers them.
