@@ -27,6 +27,7 @@ p <- ggplot(gapminder,
 library(plotly)
 ggplotly(p)
 ```
+* `reactive()`: [Link](https://www.rdocumentation.org/packages/shiny/versions/1.0.5/topics/reactive)
 
 
 ## app adding a line of best fit with a checkbox
@@ -112,6 +113,308 @@ server <- function(input, output) {
         p <- p + geom_smooth(method = "lm")
       }
       p
+    })
+  })
+}
+
+shinyApp(ui = ui, server = server)
+```
+## app to explore data (filtering content with slider and select inputs)
+```{r}
+ui <- fluidPage(
+  h1("Gapminder"),
+  sliderInput(inputId = "life", label = "Life expectancy",
+              min = 0, max = 120,
+              value = c(30, 50)),
+  # Add an "All" value to the continent list
+  selectInput("continent", "Continent",
+              choices = c("All", levels(gapminder$continent))),
+  tableOutput("table")
+)
+
+server <- function(input, output) {
+  output$table <- renderTable({
+    data <- gapminder
+    data <- subset(
+      data,
+      lifeExp >= input$life[1] & lifeExp <= input$life[2]
+    )
+    # Don't subset the data if "All" continent are chosen
+    if (input$continent != "All") {
+      data <- subset(
+        data,
+        continent == input$continent
+      )
+    }
+    data
+  })
+}
+
+shinyApp(ui, server)
+```
+
+## app with table and plot showing the same subset 
+```{r}
+ui <- fluidPage(
+  h1("Gapminder"),
+  sliderInput(inputId = "life", label = "Life expectancy",
+              min = 0, max = 120,
+              value = c(30, 50)),
+  selectInput("continent", "Continent",
+              choices = c("All", levels(gapminder$continent))),
+  # Add a plot output
+  plotOutput("plot"),
+  tableOutput("table")
+)
+
+server <- function(input, output) {
+  output$table <- renderTable({
+    data <- gapminder
+    data <- subset(
+      data,
+      lifeExp >= input$life[1] & lifeExp <= input$life[2]
+    )
+    if (input$continent != "All") {
+      data <- subset(
+        data,
+        continent == input$continent
+      )
+    }
+    data
+  })
+
+  # Create the plot render function  
+  output$plot <- renderPlot({
+    # Use the same filtered data that the table uses
+        data <- gapminder
+    data <- subset(
+      data,
+      lifeExp >= input$life[1] & lifeExp <= input$life[2]
+    )
+    if (input$continent != "All") {
+      data <- subset(
+        data,
+        continent == input$continent
+      )
+    }
+    ggplot(data, aes(gdpPercap, lifeExp)) +
+      geom_point() +
+      scale_x_log10()
+  })
+}
+
+shinyApp(ui, server)
+```
+
+## adding css
+It's possible to include CSS in your app by writing it in a separate file and importing it with `includeCSS()`, but in this course we will use the simpler approach of placing the CSS code inside `tags$style()` in the UI.
+```{r}
+my_css <- "
+#download_data {
+  /* Change the background colour of the download button
+     to orange. */
+  background: orange;
+
+  /* Change the text size to 20 pixels. */
+  font-size: 20px;
+}
+
+#table {
+  /* Change the text colour of the table to red. */
+  color: red;
+}
+"
+
+ui <- fluidPage(
+  h1("Gapminder"),
+  # Add the CSS that we wrote to the Shiny app
+  tags$style(my_css),
+  tabsetPanel(
+    tabPanel(
+      title = "Inputs",
+      sliderInput(inputId = "life", label = "Life expectancy",
+                  min = 0, max = 120,
+                  value = c(30, 50)),
+      selectInput("continent", "Continent",
+                  choices = c("All", levels(gapminder$continent))),
+      downloadButton("download_data")
+    ),
+    tabPanel(
+      title = "Plot",
+      plotOutput("plot")
+    ),
+    tabPanel(
+      title = "Table",
+      DT::dataTableOutput("table")
+    )
+  )
+)
+
+server <- function(input, output) {
+  filtered_data <- reactive({
+    data <- gapminder
+    data <- subset(
+      data,
+      lifeExp >= input$life[1] & lifeExp <= input$life[2]
+    )
+    if (input$continent != "All") {
+      data <- subset(
+        data,
+        continent == input$continent
+      )
+    }
+    data
+  })
+  
+  output$table <- DT::renderDataTable({
+    data <- filtered_data()
+    data
+  })
+
+  output$download_data <- downloadHandler(
+    filename = "gapminder_data.csv",
+    content = function(file) {
+      data <- filtered_data()
+      write.csv(data, file, row.names = FALSE)
+    }
+  )
+
+  output$plot <- renderPlot({
+    data <- filtered_data()
+    ggplot(data, aes(gdpPercap, lifeExp)) +
+      geom_point() +
+      scale_x_log10()
+  })
+}
+
+shinyApp(ui, server)
+```
+
+## app with conditional panels for inputs
+```{r}
+ui <- fluidPage(
+  h1("Word Cloud"),
+  sidebarLayout(
+    sidebarPanel(
+      radioButtons(
+        inputId = "source",
+        label = "Word source",
+        choices = c(
+          "Art of War" = "book",
+          "Use your own words" = "own",
+          "Upload a file" = "file"
+        )
+      ),
+      conditionalPanel(
+        condition = "input.source == 'own'",
+        textAreaInput("text", "Enter text", rows = 7)
+      ),
+      # Wrap the file input in a conditional panel
+      conditionalPanel(
+        # The condition should be that the user selects
+        # "file" from the radio buttons
+        condition = "input.source == 'file'",
+        fileInput("file", "Select a file")
+      ),
+      numericInput("num", "Maximum number of words",
+                   value = 100, min = 5),
+      colourInput("col", "Background colour", value = "white")
+    ),
+    mainPanel(
+      wordcloud2Output("cloud")
+    )
+  )
+)
+
+server <- function(input, output) {
+  data_source <- reactive({
+    if (input$source == "book") {
+      data <- artofwar
+    } else if (input$source == "own") {
+      data <- input$text
+    } else if (input$source == "file") {
+      data <- input_file()
+    }
+    return(data)
+  })
+  
+  input_file <- reactive({
+    if (is.null(input$file)) {
+      return("")
+    }
+    readLines(input$file$datapath)
+  })
+  
+  output$cloud <- renderWordcloud2({
+    create_wordcloud(data_source(), num_words = input$num,
+                        background = input$col)
+  })
+}
+
+shinyApp(ui = ui, server = server)
+```
+
+## Final app with isolate and action buttons
+```{r}
+ui <- fluidPage(
+  h1("Word Cloud"),
+  sidebarLayout(
+    sidebarPanel(
+      radioButtons(
+        inputId = "source",
+        label = "Word source",
+        choices = c(
+          "Art of War" = "book",
+          "Use your own words" = "own",
+          "Upload a file" = "file"
+        )
+      ),
+      conditionalPanel(
+        condition = "input.source == 'own'",
+        textAreaInput("text", "Enter text", rows = 7)
+      ),
+      conditionalPanel(
+        condition = "input.source == 'file'",
+        fileInput("file", "Select a file")
+      ),
+      numericInput("num", "Maximum number of words",
+                   value = 100, min = 5),
+      colourInput("col", "Background colour", value = "white"),
+      # Add a "draw" button to the app
+      actionButton(inputId = "draw", label = "Draw!")
+    ),
+    mainPanel(
+      wordcloud2Output("cloud")
+    )
+  )
+)
+
+server <- function(input, output) {
+  data_source <- reactive({
+    if (input$source == "book") {
+      data <- artofwar
+    } else if (input$source == "own") {
+      data <- input$text
+    } else if (input$source == "file") {
+      data <- input_file()
+    }
+    return(data)
+  })
+  
+  input_file <- reactive({
+    if (is.null(input$file)) {
+      return("")
+    }
+    readLines(input$file$datapath)
+  })
+  
+  output$cloud <- renderWordcloud2({
+    # Add the draw button as a dependency to
+    # cause the word cloud to re-render on click
+    input$draw
+    isolate({
+      create_wordcloud(data_source(), num_words = input$num,
+                       background = input$col)
     })
   })
 }
